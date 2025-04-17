@@ -1,0 +1,525 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="voter-dashboard">
+    <!-- Header Section -->
+    <div class="dashboard-header" data-aos="fade-down">
+        <div class="dashboard-header-content">
+            <h1 class="text-gradient">
+                <i class="fas fa-vote-yea me-2"></i>Cast Your Vote
+            </h1>
+            <p class="lead text-muted mb-4">Your voice matters. Select a candidate below to cast your vote in this election.</p>
+            
+            {% if current_user.voted %}
+                <div class="vote-status-card voted">
+                    <div class="vote-status-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="vote-status-text">
+                        <h4 class="mb-1">Thank you for participating!</h4>
+                        <p class="mb-2">You have already cast your vote in this election.</p>
+                        <a href="{{ url_for('results') }}" class="btn btn-primary btn-sm mt-2">
+                            <i class="fas fa-chart-pie me-1"></i> View Current Results
+                        </a>
+                    </div>
+                </div>
+            {% else %}
+                <div class="vote-status-card not-voted">
+                    <div class="vote-status-icon">
+                        <i class="fas fa-info-circle"></i>
+                    </div>
+                    <div class="vote-status-text">
+                        <h4 class="mb-1">You haven't voted yet</h4>
+                        <p class="mb-0">Please review the candidates and make your selection.</p>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Candidates Section -->
+    <div class="candidates-section py-4">
+        {% if candidates %}
+            <div class="candidates-grid">
+                {% for candidate in candidates %}
+                    <div class="candidate-wrapper" data-aos="fade-up" data-aos-delay="{{ loop.index * 100 }}">
+                        <div class="candidate-card h-100">
+                            <div class="candidate-header">
+                                <h3 class="candidate-name">{{ candidate.name }}</h3>
+                                <span class="candidate-party">{{ candidate.party }}</span>
+                            </div>
+                            
+                            <div class="candidate-photo">
+                                {% if candidate.photo_url %}
+                                    <img src="{{ candidate.photo_url }}" alt="{{ candidate.name }}">
+                                {% else %}
+                                    <div class="candidate-photo-placeholder">
+                                        <i class="fas fa-user-tie"></i>
+                                    </div>
+                                {% endif %}
+                                <div class="candidate-photo-overlay"></div>
+                            </div>
+                            
+                            <div class="candidate-info">
+                                <div class="candidate-description">
+                                    <p>{{ candidate.description }}</p>
+                                </div>
+                                
+                                <div class="candidate-actions">
+                                    {% if not current_user.voted %}
+                                        <form method="POST" action="{{ url_for('vote') }}">
+                                            {{ vote_form.hidden_tag() }}
+                                            {{ vote_form.candidate_id(value=candidate.id) }}
+                                            <button type="button" class="vote-button" 
+                                                    onclick="confirmVote(this.form, '{{ candidate.name }}')">
+                                                <i class="fas fa-vote-yea me-2"></i>Vote for {{ candidate.name }}
+                                            </button>
+                                        </form>
+                                    {% else %}
+                                        <button class="vote-button-disabled" disabled>
+                                            <i class="fas fa-check-circle me-2"></i>Voting Closed
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state" data-aos="fade-up">
+                <div class="empty-state-icon">
+                    <i class="fas fa-users-slash"></i>
+                </div>
+                <h3>No Candidates Available</h3>
+                <p>The admin has not added any candidates to this election yet. Please check back later.</p>
+            </div>
+        {% endif %}
+    </div>
+    
+    <!-- Election Info Section -->
+    <div class="election-info-section" data-aos="fade-up">
+        <div class="info-card">
+            <div class="info-icon">
+                <i class="fas fa-shield-alt"></i>
+            </div>
+            <div class="info-content">
+                <h3>Secure Voting</h3>
+                <p>Your vote is anonymous and encrypted. We use state-of-the-art security protocols to ensure the integrity of your vote.</p>
+            </div>
+        </div>
+        
+        <div class="info-card">
+            <div class="info-icon">
+                <i class="fas fa-gavel"></i>
+            </div>
+            <div class="info-content">
+                <h3>One Vote Policy</h3>
+                <p>Each registered voter can only cast one vote. This ensures a fair democratic process for all participants.</p>
+            </div>
+        </div>
+        
+        <div class="info-card">
+            <div class="info-icon">
+                <i class="fas fa-chart-bar"></i>
+            </div>
+            <div class="info-content">
+                <h3>Real-Time Results</h3>
+                <p>Once you've voted, you can view the real-time election results and track the ongoing process.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Voting Overlay Animation -->
+<style>
+.voting-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    backdrop-filter: blur(10px);
+}
+
+.voting-animation {
+    text-align: center;
+    max-width: 400px;
+    padding: 2rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 20px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.voting-icon {
+    font-size: 4rem;
+    color: #4361ee;
+    margin-bottom: 1.5rem;
+    animation: pulse 1.5s infinite;
+}
+
+.voting-text {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    color: white;
+}
+
+.voting-progress {
+    height: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.voting-progress-bar {
+    height: 100%;
+    width: 0;
+    background-image: linear-gradient(90deg, #4361ee, #4cc9f0);
+    border-radius: 10px;
+    animation: vote-progress 1.5s ease-in-out forwards;
+}
+
+@keyframes vote-progress {
+    0% { width: 0; }
+    100% { width: 100%; }
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.1); opacity: 0.8; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* Candidate grid system */
+.candidates-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 2rem;
+    margin-bottom: 3rem;
+}
+
+.candidate-wrapper {
+    transition: all 0.3s ease;
+}
+
+/* Vote status cards */
+.vote-status-card {
+    display: flex;
+    align-items: center;
+    padding: 1.5rem;
+    border-radius: 16px;
+    margin-bottom: 2rem;
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.vote-status-card.voted {
+    border-left: 5px solid var(--success-color);
+}
+
+.vote-status-card.not-voted {
+    border-left: 5px solid var(--info-color);
+}
+
+.vote-status-icon {
+    font-size: 2.5rem;
+    margin-right: 1.5rem;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.vote-status-card.voted .vote-status-icon {
+    color: var(--success-color);
+    background: rgba(46, 194, 126, 0.1);
+}
+
+.vote-status-card.not-voted .vote-status-icon {
+    color: var(--info-color);
+    background: rgba(0, 180, 216, 0.1);
+}
+
+.vote-status-text {
+    flex: 1;
+}
+
+.vote-status-text h4 {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+/* Dashboard sections */
+.dashboard-header {
+    position: relative;
+    padding: 2rem 0 1rem;
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+.dashboard-header h1 {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    font-weight: 700;
+}
+
+.dashboard-header::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100px;
+    height: 4px;
+    background-image: var(--gradient-primary);
+    border-radius: 4px;
+}
+
+.election-info-section {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-top: 4rem;
+}
+
+.info-card {
+    background: rgba(255, 255, 255, 0.03);
+    padding: 1.5rem;
+    border-radius: 16px;
+    display: flex;
+    align-items: flex-start;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.info-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.info-icon {
+    font-size: 1.8rem;
+    margin-right: 1.25rem;
+    color: var(--accent-3);
+    background-image: var(--gradient-primary);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+}
+
+.info-content h3 {
+    font-size: 1.25rem;
+    margin-bottom: 0.75rem;
+    font-weight: 600;
+}
+
+.info-content p {
+    font-size: 0.95rem;
+    opacity: 0.8;
+    margin-bottom: 0;
+}
+
+/* Empty state styling */
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    margin: 2rem 0;
+}
+
+.empty-state-icon {
+    font-size: 4rem;
+    color: #666;
+    margin-bottom: 1.5rem;
+    opacity: 0.5;
+}
+
+.empty-state h3 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.empty-state p {
+    max-width: 500px;
+    margin: 0 auto;
+    opacity: 0.7;
+}
+
+/* Vote buttons - disabled state */
+.vote-button-disabled {
+    width: 100%;
+    padding: 0.75rem 1.5rem;
+    background: rgba(128, 128, 128, 0.2);
+    color: rgba(255, 255, 255, 0.5);
+    border: none;
+    border-radius: 50px;
+    font-weight: 600;
+    cursor: not-allowed;
+    transition: all 0.3s;
+}
+
+/* Responsive adjustments */
+@media (max-width: 767px) {
+    .candidates-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .election-info-section {
+        grid-template-columns: 1fr;
+    }
+    
+    .vote-status-card {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .vote-status-icon {
+        margin-right: 0;
+        margin-bottom: 1rem;
+    }
+    
+    .info-card {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .info-icon {
+        margin-right: 0;
+        margin-bottom: 1rem;
+        font-size: 2.5rem;
+    }
+}
+</style>
+
+<!-- Confirmation Modal -->
+<div class="modal fade" id="confirmVoteModal" tabindex="-1" aria-labelledby="confirmVoteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title" id="confirmVoteModalLabel">
+                    <i class="fas fa-vote-yea me-2 text-primary"></i>Confirm Your Vote
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center p-4">
+                <div class="vote-confirmation-icon mb-3">
+                    <i class="fas fa-ballot-check"></i>
+                </div>
+                <h4 class="mb-3">Are you sure you want to vote for <br><span id="candidateName" class="text-gradient"></span>?</h4>
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    This action cannot be undone. You can only vote once.
+                </div>
+                <p class="text-muted mb-0">Once submitted, your vote will be recorded and you won't be able to change it.</p>
+            </div>
+            <div class="modal-footer border-0 justify-content-center pb-4">
+                <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-primary px-4" id="confirmVoteBtn">
+                    <i class="fas fa-check me-2"></i>Yes, Submit My Vote
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* More modal styling */
+.vote-confirmation-icon {
+    font-size: 4rem;
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+    animation: bounce 2s infinite;
+    background-image: var(--gradient-primary);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+}
+
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
+    40% {transform: translateY(-20px);}
+    60% {transform: translateY(-10px);}
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Enhanced candidate cards hover effect
+        const candidateCards = document.querySelectorAll('.candidate-card');
+        
+        candidateCards.forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                const photo = this.querySelector('.candidate-photo img, .candidate-photo-placeholder');
+                if (photo) {
+                    photo.style.transform = 'scale(1.05)';
+                }
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                const photo = this.querySelector('.candidate-photo img, .candidate-photo-placeholder');
+                if (photo) {
+                    photo.style.transform = 'scale(1)';
+                }
+            });
+        });
+    });
+
+    // Enhanced vote confirmation
+    function confirmVote(form, candidateName) {
+        // Update candidate name with highlighting
+        const candidateNameEl = document.getElementById('candidateName');
+        candidateNameEl.textContent = candidateName;
+        
+        // Show modal with animation
+        const modalEl = document.getElementById('confirmVoteModal');
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
+        
+        // Setup confirm button action
+        document.getElementById('confirmVoteBtn').onclick = function() {
+            // Hide modal
+            modal.hide();
+            
+            // Show voting overlay with animation
+            const votingOverlay = document.createElement('div');
+            votingOverlay.className = 'voting-overlay';
+            votingOverlay.innerHTML = `
+                <div class="voting-animation">
+                    <i class="fas fa-check-circle voting-icon"></i>
+                    <div class="voting-text">Casting Your Vote</div>
+                    <div class="voting-progress">
+                        <div class="voting-progress-bar"></div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(votingOverlay);
+            
+            // Submit the form after animation
+            setTimeout(() => {
+                form.submit();
+            }, 1500);
+        };
+    }
+</script>
+{% endblock %}

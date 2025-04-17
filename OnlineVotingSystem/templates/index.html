@@ -1,0 +1,125 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body text-center py-5">
+                <h1 class="display-4 mb-4">
+                    <i class="fas fa-vote-yea me-3 text-primary"></i>Online Voting System
+                </h1>
+                <p class="lead">A secure and transparent platform for digital elections</p>
+                
+                <div class="mt-5">
+                    {% if current_user.is_authenticated %}
+                        {% if current_user.role == 'admin' %}
+                            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-primary btn-lg me-2">
+                                <i class="fas fa-tachometer-alt me-2"></i>Admin Dashboard
+                            </a>
+                        {% else %}
+                            {% if current_user.voted %}
+                                <a href="{{ url_for('results') }}" class="btn btn-success btn-lg me-2">
+                                    <i class="fas fa-chart-bar me-2"></i>View Results
+                                </a>
+                            {% else %}
+                                <a href="{{ url_for('voter_dashboard') }}" class="btn btn-primary btn-lg me-2">
+                                    <i class="fas fa-vote-yea me-2"></i>Cast Your Vote
+                                </a>
+                            {% endif %}
+                        {% endif %}
+                    {% else %}
+                        <a href="{{ url_for('login') }}" class="btn btn-primary btn-lg me-2">
+                            <i class="fas fa-sign-in-alt me-2"></i>Login
+                        </a>
+                        <a href="{{ url_for('register') }}" class="btn btn-secondary btn-lg">
+                            <i class="fas fa-user-plus me-2"></i>Register
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body text-center">
+                        <i class="fas fa-lock fa-3x text-primary mb-3"></i>
+                        <h3>Secure</h3>
+                        <p>Advanced encryption and authentication to ensure your vote is secure and confidential.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body text-center">
+                        <i class="fas fa-search fa-3x text-primary mb-3"></i>
+                        <h3>Transparent</h3>
+                        <p>Clear voting process and real-time results available to all registered voters.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body text-center">
+                        <i class="fas fa-check-double fa-3x text-primary mb-3"></i>
+                        <h3>Reliable</h3>
+                        <p>Designed with redundancy and validation to prevent errors and ensure accurate results.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <h2 class="text-center mb-4">How It Works</h2>
+                <div class="row">
+                    <div class="col-md-6 mb-4">
+                        <div class="d-flex">
+                            <div class="me-3">
+                                <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">1</div>
+                            </div>
+                            <div>
+                                <h4>Create an Account</h4>
+                                <p>Register with your email to get started. Your account will be verified before you can vote.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-4">
+                        <div class="d-flex">
+                            <div class="me-3">
+                                <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">2</div>
+                            </div>
+                            <div>
+                                <h4>Browse Candidates</h4>
+                                <p>View candidate profiles, party affiliations, and platforms to make an informed decision.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-4">
+                        <div class="d-flex">
+                            <div class="me-3">
+                                <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">3</div>
+                            </div>
+                            <div>
+                                <h4>Cast Your Vote</h4>
+                                <p>Select your preferred candidate and submit your vote. You can only vote once.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-4">
+                        <div class="d-flex">
+                            <div class="me-3">
+                                <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">4</div>
+                            </div>
+                            <div>
+                                <h4>View Results</h4>
+                                <p>Track real-time election results with detailed statistics and visualizations.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

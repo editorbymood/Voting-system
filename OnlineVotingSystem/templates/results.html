@@ -1,0 +1,880 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="results-page">
+    <!-- Header Section -->
+    <div class="results-header" data-aos="fade-down">
+        <div class="results-header-content">
+            <h1 class="text-gradient text-center">
+                <i class="fas fa-chart-pie me-2"></i>Election Results
+            </h1>
+            <p class="lead text-muted text-center mb-4">View live voting results and statistics for the current election.</p>
+            
+            {% if total_votes > 0 %}
+                <div class="stats-summary" data-aos="fade-up" data-aos-delay="100">
+                    <div class="stat-item">
+                        <div class="stat-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-value">{{ total_votes }}</div>
+                        <div class="stat-label">Total Votes</div>
+                    </div>
+                    {% if candidates|length > 0 %}
+                    <div class="stat-item">
+                        <div class="stat-icon">
+                            <i class="fas fa-user-tie"></i>
+                        </div>
+                        <div class="stat-value">{{ candidates|length }}</div>
+                        <div class="stat-label">Candidates</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-icon">
+                            <i class="fas fa-trophy"></i>
+                        </div>
+                        <div class="stat-value">{{ candidates[0].name }}</div>
+                        <div class="stat-label">Leading Candidate</div>
+                    </div>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Main Content -->
+    {% if total_votes > 0 %}
+        <div class="results-grid">
+            <!-- Left Column - Chart -->
+            <div class="results-chart-container" data-aos="fade-right">
+                <div class="results-card">
+                    <div class="results-card-header">
+                        <h3>
+                            <i class="fas fa-chart-pie me-2"></i>
+                            Vote Distribution
+                        </h3>
+                        <div class="chart-toggle">
+                            <button class="chart-toggle-btn active" id="pieChartBtn">
+                                <i class="fas fa-chart-pie"></i>
+                            </button>
+                            <button class="chart-toggle-btn" id="barChartBtn">
+                                <i class="fas fa-chart-bar"></i>
+                            </button>
+                            <button class="chart-toggle-btn" id="polarChartBtn">
+                                <i class="fas fa-circle-notch"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="results-card-body">
+                        <div class="chart-container">
+                            <canvas id="resultsChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="results-card-footer">
+                        <div class="chart-info">
+                            <div class="chart-info-item">
+                                <span class="chart-info-label">Total Votes:</span>
+                                <span class="chart-info-value">{{ total_votes }}</span>
+                            </div>
+                            <div class="chart-info-item">
+                                <span class="chart-info-label">Last Updated:</span>
+                                <span class="chart-info-value" id="lastUpdated">{{ now.strftime('%H:%M:%S') }}</span>
+                            </div>
+                        </div>
+                        <button class="btn btn-sm btn-primary update-chart-btn" id="refreshChartBtn">
+                            <i class="fas fa-sync-alt me-1"></i> Refresh Data
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Column - Candidates -->
+            <div class="results-candidates-container" data-aos="fade-left">
+                <div class="results-card">
+                    <div class="results-card-header">
+                        <h3>
+                            <i class="fas fa-list-ol me-2"></i>
+                            Candidate Rankings
+                        </h3>
+                        <div class="results-card-actions">
+                            <span class="badge bg-primary">Live Results</span>
+                        </div>
+                    </div>
+                    <div class="results-card-body">
+                        <div class="candidates-ranking-list">
+                            {% for candidate in candidates %}
+                                <div class="candidate-ranking-item" data-aos="fade-up" data-aos-delay="{{ loop.index * 50 }}">
+                                    <div class="candidate-ranking-position">{{ loop.index }}</div>
+                                    <div class="candidate-ranking-details">
+                                        <div class="candidate-ranking-header">
+                                            <h4 class="candidate-ranking-name">{{ candidate.name }}</h4>
+                                            <span class="candidate-ranking-party">{{ candidate.party }}</span>
+                                        </div>
+                                        <div class="candidate-ranking-progress">
+                                            <div class="progress-container">
+                                                <div class="progress">
+                                                    <div class="progress-bar progress-animated" role="progressbar" 
+                                                        style="width: {{ candidate.percentage }}%;" 
+                                                        aria-valuenow="{{ candidate.percentage }}" 
+                                                        aria-valuemin="0" aria-valuemax="100"></div>
+                                                </div>
+                                                <div class="progress-info">
+                                                    <span class="progress-percentage">{{ candidate.percentage }}%</span>
+                                                    <span class="progress-votes">{{ candidate.votes }} votes</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Leading Candidate Highlight -->
+        {% if candidates|length > 0 %}
+            {% with winner = candidates[0] %}
+            <div class="leading-candidate-section" data-aos="zoom-in">
+                <div class="results-card">
+                    <div class="results-card-header leading-candidate-header">
+                        <h3>
+                            <i class="fas fa-trophy me-2"></i>
+                            Leading Candidate
+                        </h3>
+                    </div>
+                    <div class="results-card-body leading-candidate-body">
+                        <div class="leading-candidate-content">
+                            <div class="leading-candidate-photo">
+                                {% if winner.photo_url %}
+                                    <img src="{{ winner.photo_url }}" alt="{{ winner.name }}">
+                                {% else %}
+                                    <div class="candidate-photo-placeholder">
+                                        <i class="fas fa-user-tie"></i>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="leading-candidate-info">
+                                <h2 class="leading-candidate-name">{{ winner.name }}</h2>
+                                <div class="leading-candidate-party">{{ winner.party }}</div>
+                                <div class="leading-candidate-stats">
+                                    <div class="stat-circle">
+                                        <div class="stat-circle-value">{{ winner.votes }}</div>
+                                        <div class="stat-circle-label">Votes</div>
+                                    </div>
+                                    <div class="stat-circle">
+                                        <div class="stat-circle-value">{{ winner.percentage }}%</div>
+                                        <div class="stat-circle-label">Of Total</div>
+                                    </div>
+                                </div>
+                                <div class="leading-candidate-progress">
+                                    <div class="progress">
+                                        <div class="progress-bar progress-animated" style="width: {{ winner.percentage }}%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endwith %}
+        {% endif %}
+    {% else %}
+        <div class="empty-state" data-aos="fade-up">
+            <div class="empty-state-icon">
+                <i class="fas fa-chart-bar"></i>
+            </div>
+            <h3>No Votes Cast Yet</h3>
+            <p>The election has not received any votes yet. Results will be displayed here once voting begins.</p>
+            <a href="{{ url_for('voter_dashboard') }}" class="btn btn-primary mt-3">
+                <i class="fas fa-vote-yea me-2"></i>Cast Your Vote
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+/* Results page styling */
+.results-page {
+    width: 100%;
+}
+
+.results-header {
+    margin-bottom: 2rem;
+    position: relative;
+}
+
+.results-header::after {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100px;
+    height: 4px;
+    background-image: var(--gradient-primary);
+    border-radius: 4px;
+}
+
+.stats-summary {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin-top: 2rem;
+    flex-wrap: wrap;
+}
+
+.stat-item {
+    text-align: center;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 1.5rem;
+    border-radius: 16px;
+    min-width: 200px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.stat-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.stat-icon {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+    color: var(--primary-color);
+    background-image: var(--gradient-primary);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+}
+
+.stat-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.7);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.results-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-bottom: 2.5rem;
+}
+
+.results-card {
+    background: rgba(45, 55, 72, 0.4);
+    border-radius: var(--border-radius-md);
+    overflow: hidden;
+    box-shadow: var(--card-shadow);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s ease;
+}
+
+.results-card:hover {
+    box-shadow: var(--card-shadow-hover);
+    transform: translateY(-5px);
+}
+
+.results-card-header {
+    background: rgba(67, 97, 238, 0.1);
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.results-card-header h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.results-card-body {
+    padding: 1.5rem;
+    flex-grow: 1;
+}
+
+.results-card-footer {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    background: rgba(0, 0, 0, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.chart-container {
+    position: relative;
+    height: 400px;
+    width: 100%;
+}
+
+.chart-toggle {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.chart-toggle-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.7);
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.chart-toggle-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+.chart-toggle-btn.active {
+    background-image: var(--gradient-primary);
+    color: white;
+    box-shadow: 0 5px 15px rgba(67, 97, 238, 0.3);
+}
+
+.chart-info {
+    display: flex;
+    gap: 1.5rem;
+}
+
+.chart-info-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.chart-info-label {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.chart-info-value {
+    font-weight: 600;
+    color: white;
+}
+
+.update-chart-btn {
+    border-radius: 50px;
+    padding: 0.3rem 1rem;
+}
+
+.update-chart-btn i {
+    transition: transform 0.3s ease;
+}
+
+.update-chart-btn:hover i {
+    transform: rotate(180deg);
+}
+
+/* Candidate rankings */
+.candidates-ranking-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.candidate-ranking-item {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    padding: 0.75rem;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    transition: all 0.3s ease;
+}
+
+.candidate-ranking-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    transform: translateX(5px);
+}
+
+.candidate-ranking-position {
+    font-size: 1.5rem;
+    font-weight: 700;
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background-image: var(--gradient-primary);
+    color: white;
+    box-shadow: 0 5px 15px rgba(67, 97, 238, 0.3);
+}
+
+.candidate-ranking-details {
+    flex: 1;
+}
+
+.candidate-ranking-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.candidate-ranking-name {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.candidate-ranking-party {
+    font-size: 0.8rem;
+    font-weight: 500;
+    padding: 0.25rem 0.75rem;
+    border-radius: 50px;
+    background-image: var(--gradient-primary);
+    color: white;
+}
+
+.progress-container {
+    width: 100%;
+}
+
+.progress {
+    height: 10px;
+    border-radius: 50px;
+    background: rgba(255, 255, 255, 0.1);
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+}
+
+.progress-animated .progress-bar {
+    animation: progress-animation 1.5s ease-in-out;
+}
+
+@keyframes progress-animation {
+    0% { width: 0; }
+}
+
+.progress-bar {
+    border-radius: 50px;
+    background-image: var(--gradient-primary);
+    position: relative;
+    overflow: hidden;
+}
+
+.progress-bar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    animation: progress-shine 2s infinite;
+}
+
+.progress-info {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+}
+
+.progress-percentage {
+    font-weight: 600;
+}
+
+.progress-votes {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* Leading candidate section */
+.leading-candidate-section {
+    margin-top: 2rem;
+}
+
+.leading-candidate-header {
+    background-image: var(--gradient-primary);
+}
+
+.leading-candidate-body {
+    padding: 2rem;
+}
+
+.leading-candidate-content {
+    display: flex;
+    gap: 2.5rem;
+    align-items: center;
+}
+
+.leading-candidate-photo {
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 5px solid rgba(255, 255, 255, 0.1);
+    position: relative;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.leading-candidate-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.leading-candidate-photo::after {
+    content: '';
+    position: absolute;
+    top: -5px;
+    left: -5px;
+    right: -5px;
+    bottom: -5px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(67, 97, 238, 0.5), transparent);
+    z-index: -1;
+    animation: rotate 10s linear infinite;
+}
+
+@keyframes rotate {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.leading-candidate-info {
+    flex: 1;
+}
+
+.leading-candidate-name {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    background-image: var(--gradient-primary);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+}
+
+.leading-candidate-party {
+    display: inline-block;
+    padding: 0.4rem 1rem;
+    background-image: var(--gradient-primary);
+    border-radius: 50px;
+    color: white;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+}
+
+.leading-candidate-stats {
+    display: flex;
+    gap: 2rem;
+    margin-bottom: 1.5rem;
+}
+
+.stat-circle {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.05);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.stat-circle::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(135deg, var(--primary-color), transparent);
+    border-radius: 50%;
+    z-index: -1;
+    opacity: 0.7;
+}
+
+.stat-circle-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+}
+
+.stat-circle-label {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.7);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    margin: 3rem 0;
+}
+
+.empty-state-icon {
+    font-size: 4rem;
+    color: var(--primary-color);
+    margin-bottom: 1.5rem;
+    opacity: 0.8;
+    background-image: var(--gradient-primary);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+}
+
+.empty-state h3 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.empty-state p {
+    max-width: 500px;
+    margin: 0 auto;
+    opacity: 0.7;
+}
+
+@media (max-width: 991px) {
+    .results-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .leading-candidate-content {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .leading-candidate-stats {
+        justify-content: center;
+    }
+}
+
+@media (max-width: 767px) {
+    .stats-summary {
+        gap: 1rem;
+    }
+    
+    .stat-item {
+        width: 100%;
+        min-width: auto;
+    }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        {% if total_votes > 0 %}
+            // Chart variables
+            let resultsChart;
+            let chartType = 'pie';
+            let chartData;
+            
+            // Initialize chart
+            const initChart = () => {
+                fetch('{{ url_for("api_results") }}')
+                    .then(response => response.json())
+                    .then(data => {
+                        chartData = data;
+                        createChart(chartType, chartData);
+                    })
+                    .catch(error => console.error('Error loading chart data:', error));
+            };
+            
+            // Create chart based on type
+            const createChart = (type, data) => {
+                const ctx = document.getElementById('resultsChart').getContext('2d');
+                
+                // Destroy existing chart if it exists
+                if (resultsChart) {
+                    resultsChart.destroy();
+                }
+                
+                // Chart options based on type
+                const options = {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: type === 'pie' || type === 'polarArea' ? 'right' : 'top',
+                            labels: {
+                                color: 'rgba(255, 255, 255, 0.8)',
+                                font: {
+                                    family: "'Poppins', sans-serif",
+                                    size: 12
+                                },
+                                padding: 20
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const value = context.raw;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = Math.round((value / total) * 100);
+                                    return `${context.label}: ${value} votes (${percentage}%)`;
+                                }
+                            },
+                            backgroundColor: 'rgba(33, 37, 41, 0.8)',
+                            titleFont: {
+                                family: "'Poppins', sans-serif",
+                                size: 14,
+                                weight: 'bold'
+                            },
+                            bodyFont: {
+                                family: "'Poppins', sans-serif",
+                                size: 13
+                            },
+                            padding: 12,
+                            cornerRadius: 8,
+                            displayColors: true
+                        }
+                    },
+                    animation: {
+                        animateScale: true,
+                        animateRotate: true,
+                        duration: 2000,
+                        easing: 'easeOutQuart'
+                    }
+                };
+                
+                // Add scales for bar chart
+                if (type === 'bar') {
+                    options.scales = {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.05)',
+                                borderDash: [5, 5]
+                            },
+                            ticks: {
+                                color: 'rgba(255, 255, 255, 0.6)',
+                                font: {
+                                    family: "'Poppins', sans-serif"
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: 'Votes',
+                                color: 'rgba(255, 255, 255, 0.8)',
+                                font: {
+                                    family: "'Poppins', sans-serif",
+                                    size: 14
+                                }
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                color: 'rgba(255, 255, 255, 0.6)',
+                                font: {
+                                    family: "'Poppins', sans-serif"
+                                }
+                            }
+                        }
+                    };
+                }
+                
+                // Create chart
+                resultsChart = new Chart(ctx, {
+                    type: type,
+                    data: data,
+                    options: options
+                });
+            };
+            
+            // Initialize chart on load
+            initChart();
+            
+            // Chart type toggle buttons
+            document.getElementById('pieChartBtn').addEventListener('click', function() {
+                document.querySelectorAll('.chart-toggle-btn').forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+                chartType = 'pie';
+                createChart(chartType, chartData);
+            });
+            
+            document.getElementById('barChartBtn').addEventListener('click', function() {
+                document.querySelectorAll('.chart-toggle-btn').forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+                chartType = 'bar';
+                createChart(chartType, chartData);
+            });
+            
+            document.getElementById('polarChartBtn').addEventListener('click', function() {
+                document.querySelectorAll('.chart-toggle-btn').forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+                chartType = 'polarArea';
+                createChart(chartType, chartData);
+            });
+            
+            // Refresh chart data
+            document.getElementById('refreshChartBtn').addEventListener('click', function() {
+                const icon = this.querySelector('i');
+                icon.classList.add('fa-spin');
+                
+                fetch('{{ url_for("api_results") }}')
+                    .then(response => response.json())
+                    .then(data => {
+                        chartData = data;
+                        createChart(chartType, chartData);
+                        
+                        // Update last updated time
+                        const now = new Date();
+                        const time = now.toLocaleTimeString();
+                        document.getElementById('lastUpdated').textContent = time;
+                        
+                        // Stop spinning after animation
+                        setTimeout(() => {
+                            icon.classList.remove('fa-spin');
+                        }, 500);
+                    })
+                    .catch(error => {
+                        console.error('Error refreshing chart data:', error);
+                        icon.classList.remove('fa-spin');
+                    });
+            });
+            
+            // Auto refresh every 30 seconds
+            setInterval(() => {
+                fetch('{{ url_for("api_results") }}')
+                    .then(response => response.json())
+                    .then(data => {
+                        chartData = data;
+                        createChart(chartType, chartData);
+                        
+                        // Update last updated time
+                        const now = new Date();
+                        const time = now.toLocaleTimeString();
+                        document.getElementById('lastUpdated').textContent = time;
+                    })
+                    .catch(error => console.error('Error auto-refreshing chart data:', error));
+            }, 30000);
+        {% endif %}
+    });
+</script>
+{% endblock %}

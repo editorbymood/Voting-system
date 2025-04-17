@@ -1,0 +1,110 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white">
+                <h2 class="h4 mb-0">
+                    <i class="fas fa-edit me-2"></i>Edit Candidate
+                </h2>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" action="{{ url_for('edit_candidate', candidate_id=candidate.id) }}">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="mb-3">
+                        {{ form.name.label(class="form-label") }}
+                        {% if form.name.errors %}
+                            {{ form.name(class="form-control is-invalid") }}
+                            <div class="invalid-feedback">
+                                {% for error in form.name.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            {{ form.name(class="form-control") }}
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.party.label(class="form-label") }}
+                        {% if form.party.errors %}
+                            {{ form.party(class="form-control is-invalid") }}
+                            <div class="invalid-feedback">
+                                {% for error in form.party.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            {{ form.party(class="form-control") }}
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.email.label(class="form-label") }}
+                        {% if form.email.errors %}
+                            {{ form.email(class="form-control is-invalid") }}
+                            <div class="invalid-feedback">
+                                {% for error in form.email.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            {{ form.email(class="form-control") }}
+                        {% endif %}
+                        <small class="form-text text-muted">Email address for candidate notifications</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.description.label(class="form-label") }}
+                        {% if form.description.errors %}
+                            {{ form.description(class="form-control is-invalid", rows=5) }}
+                            <div class="invalid-feedback">
+                                {% for error in form.description.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            {{ form.description(class="form-control", rows=5) }}
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-4">
+                        {{ form.photo_url.label(class="form-label") }}
+                        <div class="input-group">
+                            {% if form.photo_url.errors %}
+                                {{ form.photo_url(class="form-control is-invalid") }}
+                                <div class="invalid-feedback">
+                                    {% for error in form.photo_url.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                {{ form.photo_url(class="form-control") }}
+                            {% endif %}
+                            <span class="input-group-text"><i class="fas fa-link"></i></span>
+                        </div>
+                        <div class="form-text text-muted">Enter a URL to an image of the candidate</div>
+                    </div>
+                    
+                    {% if candidate.photo_url %}
+                        <div class="mb-4 text-center">
+                            <p class="form-label">Current Photo:</p>
+                            <img src="{{ candidate.photo_url }}" alt="{{ candidate.name }}" 
+                                 class="img-thumbnail" style="max-height: 200px;">
+                        </div>
+                    {% endif %}
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('admin_candidates') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Back to List
+                        </a>
+                        {{ form.submit(class="btn btn-primary") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
